@@ -1,10 +1,11 @@
 import { useStore } from '../store/StoreContext.jsx';
 import { AMBER } from '../store/theme.js';
+import { haptic } from '../lib/haptics.js';
 
 export default function MemorySheet() {
   const { state, dispatch } = useStore();
   return (
-    <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,7,9,.72)', display: 'flex', alignItems: 'flex-end', zIndex: 50 }}>
+    <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,7,9,.72)', display: 'flex', alignItems: 'flex-end', zIndex: 50, animation: 'ovFade .18s ease' }}>
       <div style={{ width: '100%', maxHeight: '78%', overflowY: 'auto', background: '#15171B', borderRadius: '28px 28px 0 0', padding: `26px 24px calc(env(safe-area-inset-bottom, 0px) + 24px)`, animation: 'ovRise .22s ease' }}>
         <div style={{ fontSize: 21, fontWeight: 900, letterSpacing: '-.03em' }}>What Coach remembers</div>
         <div style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(238,241,244,.45)', marginTop: 8, textWrap: 'pretty' }}>Used when building sessions and deciding what to bring up.</div>
@@ -19,7 +20,7 @@ export default function MemorySheet() {
             </div>
           ))}
         </div>
-        <button onClick={() => dispatch({ type: 'TOGGLE_MEMORY' })} style={{
+        <button className="pressable-subtle" onClick={() => { haptic.tap(); dispatch({ type: 'TOGGLE_MEMORY' }); }} style={{
           width: '100%', height: 50, marginTop: 28, borderRadius: 16, border: 'none', background: 'rgba(255,255,255,.08)',
           color: 'rgba(238,241,244,.75)', fontFamily: 'Chivo,sans-serif', fontSize: 15, fontWeight: 700, cursor: 'pointer'
         }}>Close</button>

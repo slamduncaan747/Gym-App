@@ -7,9 +7,14 @@ import { todayISO } from '../lib/format.js';
 const StoreCtx = createContext(null);
 
 function init() {
-  const todayIso = todayISO();
+  const base = freshState();
   const saved = loadRaw();
-  return saved || freshState(todayIso);
+  if (!saved) return base;
+  const merged = { ...base, ...saved };
+  // Pre-existing installs from before onboarding existed shouldn't be forced
+  // through it retroactively.
+  if (saved.onboarded === undefined) merged.onboarded = true;
+  return merged;
 }
 
 export function StoreProvider({ children }) {

@@ -8,17 +8,33 @@ const outDir = path.join(__dirname, '..', 'public', 'icons');
 mkdirSync(outDir, { recursive: true });
 
 const ACC = '#4E8CF0'; // sRGB approximation of oklch(0.66 0.17 250) for raster icons
-const BG = '#0A0B0D';
+const ACC_LIGHT = '#8BB4FA';
 
-function svg({ size, pad = 0, bg = BG }) {
-  const barW = Math.round(size * 0.1);
+function svg({ size, pad = 0 }) {
+  const barW = Math.round(size * 0.095);
   const inset = pad;
   const s = size - pad * 2;
+  const cx = s / 2, cy = s / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <rect width="${size}" height="${size}" fill="${bg}"/>
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#15181E"/>
+        <stop offset="100%" stop-color="#07080A"/>
+      </linearGradient>
+      <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${ACC_LIGHT}"/>
+        <stop offset="100%" stop-color="${ACC}"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="38%" r="65%">
+        <stop offset="0%" stop-color="${ACC}" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="${ACC}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="${size}" height="${size}" fill="url(#bg)"/>
+    <rect width="${size}" height="${size}" fill="url(#glow)"/>
     <g transform="translate(${inset},${inset})">
-      <circle cx="${s / 2}" cy="${s / 2}" r="${s * 0.30}" fill="none" stroke="${ACC}" stroke-width="${s * 0.11}"/>
-      <rect x="${s / 2 - barW / 2}" y="${s * 0.08}" width="${barW}" height="${s * 0.22}" rx="${barW / 2}" fill="${ACC}"/>
+      <circle cx="${cx}" cy="${cy}" r="${s * 0.295}" fill="none" stroke="url(#mark)" stroke-width="${s * 0.105}"/>
+      <rect x="${cx - barW / 2}" y="${s * 0.085}" width="${barW}" height="${s * 0.235}" rx="${barW / 2}" fill="url(#mark)"/>
     </g>
   </svg>`;
 }
@@ -28,8 +44,8 @@ const targets = [
   { name: 'icon-180.png', size: 180, pad: 0 },
   { name: 'icon-192.png', size: 192, pad: 0 },
   { name: 'icon-512.png', size: 512, pad: 0 },
-  { name: 'icon-maskable-192.png', size: 192, pad: 24 },
-  { name: 'icon-maskable-512.png', size: 512, pad: 64 }
+  { name: 'icon-maskable-192.png', size: 192, pad: 26 },
+  { name: 'icon-maskable-512.png', size: 512, pad: 70 }
 ];
 
 const browser = await chromium.launch();

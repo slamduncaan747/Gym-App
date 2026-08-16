@@ -2,6 +2,7 @@ import { useStore } from '../store/StoreContext.jsx';
 import { PLANS, NOTES } from '../store/seed.js';
 import { ACC, ACC_SOFT, ACC_TEXT } from '../store/theme.js';
 import { todayISO, weekdayName, weekOfProgram } from '../lib/format.js';
+import { haptic } from '../lib/haptics.js';
 
 const CHIPS = [
   { k: 'short', label: '30 minutes' },
@@ -18,13 +19,20 @@ export default function Home() {
   const { week, of } = weekOfProgram(state.programStartDate, todayIso);
   const paused = state.session === 'paused';
 
-  const startWorkout = () => paused ? dispatch({ type: 'RESUME_SESSION' }) : dispatch({ type: 'START_SESSION' });
+  const startWorkout = () => {
+    haptic.success();
+    dispatch({ type: paused ? 'RESUME_SESSION' : 'START_SESSION' });
+  };
+  const pickChip = (c, on) => {
+    haptic.select();
+    dispatch({ type: 'LOAD_PLAN', plan: on ? 'base' : c.k, pivot: on ? null : c.k });
+  };
 
   return (
-    <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div className="tab-fade" style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {paused && (
         <>
-          <button onClick={() => dispatch({ type: 'RESUME_SESSION' })} style={{
+          <button className="pressable" onClick={() => { haptic.tap(); dispatch({ type: 'RESUME_SESSION' }); }} style={{
             width: '100%', border: 'none', borderRadius: 18, background: 'oklch(0.66 0.17 250 / .16)',
             padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
             fontFamily: 'Chivo,sans-serif', textAlign: 'left', marginBottom: 26, animation: 'ovRise .22s ease'
@@ -33,7 +41,7 @@ export default function Home() {
             <span style={{ flex: 1, fontSize: 15, fontWeight: 700, letterSpacing: '-.02em', color: '#EEF1F4' }}>Session paused</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: ACC_TEXT }}>Resume</span>
           </button>
-          <button onClick={() => dispatch({ type: 'DISCARD_SESSION' })} style={{
+          <button className="pressable-subtle" onClick={() => { haptic.warning(); dispatch({ type: 'DISCARD_SESSION' }); }} style={{
             alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, margin: '-16px 0 26px',
             fontFamily: 'Chivo,sans-serif', fontSize: 13.5, fontWeight: 600, color: 'rgba(238,241,244,.55)', cursor: 'pointer'
           }}>Discard session</button>
@@ -69,7 +77,7 @@ export default function Home() {
         {CHIPS.map(c => {
           const on = state.plan === c.k;
           return (
-            <button key={c.k} onClick={() => dispatch({ type: 'LOAD_PLAN', plan: on ? 'base' : c.k, pivot: on ? null : c.k })} style={{
+            <button key={c.k} className="pressable-subtle" onClick={() => pickChip(c, on)} style={{
               flex: 'none', height: 42, padding: '0 16px', borderRadius: 14,
               border: `1.5px solid ${on ? ACC : 'rgba(255,255,255,.12)'}`, background: on ? ACC_SOFT : 'transparent',
               color: on ? ACC_TEXT : 'rgba(238,241,244,.7)', fontFamily: 'Chivo,sans-serif', fontSize: 14,
@@ -79,7 +87,7 @@ export default function Home() {
         })}
       </div>
 
-      <button onClick={startWorkout} style={{
+      <button className="pressable" onClick={startWorkout} style={{
         width: '100%', height: 66, border: 'none', borderRadius: 20, background: ACC, color: '#fff',
         fontFamily: 'Chivo,sans-serif', fontSize: 20, fontWeight: 800, letterSpacing: '-.02em', cursor: 'pointer'
       }}>{paused ? 'Resume session' : 'Start workout'}</button>

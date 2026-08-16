@@ -1,9 +1,7 @@
-import { THREAD_SEED, MEMORIES_SEED, METRICS_SEED } from './seed.js';
-import { buildSeedWorkoutLog } from './derive.js';
-import { addDays, uid } from '../lib/format.js';
-
-export function freshState(todayIso) {
+export function freshState() {
   return {
+    onboarded: false,
+    profile: { name: '', trainingDays: [] },
     tab: 'home',
     plan: 'base',
     pivot: null,
@@ -21,16 +19,15 @@ export function freshState(todayIso) {
     metric: 'score',
     memoryOpen: false,
     settingsOpen: false,
-    unread: 2,
+    unread: 0,
     typing: false,
-    chatThread: THREAD_SEED.map(m => ({
-      id: uid(), ts: addDays(todayIso, -m.daysAgo), me: m.me, text: m.text,
-      saved: m.saved || null, action: m.action || null, actionConsumed: false
-    })),
-    memories: MEMORIES_SEED.map(m => ({ ...m })),
-    workoutLog: buildSeedWorkoutLog(todayIso),
-    metricPoints: Object.fromEntries(Object.entries(METRICS_SEED).map(([k, v]) => [k, [...v.pts]])),
-    programStartDate: addDays(todayIso, -14),
+    chatThread: [],
+    memories: [],
+    workoutLog: [],
+    metricPoints: { score: [], Bench: [], Squat: [], Deadlift: [] },
+    scaleFactors: { chest: 1, legs: 1, back: 1 },
+    exerciseWeights: {},
+    programStartDate: null,
     weightUnit: 'lb',
     restSeconds: 150,
     apiKey: ''

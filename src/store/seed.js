@@ -1,7 +1,10 @@
-// Seed content translated from the OVERLOAD.dc.html prototype's data tables.
-// PLANS / NOTES / ALTS / VOLUME / METRICS / WEEKS / MEMORIES / THREAD are the
-// same shapes and numbers the prototype shipped with — they're the starting
-// point ("seed") that real logged workouts and coach conversation build on.
+// Content translated from the OVERLOAD.dc.html prototype's data tables.
+// PLANS / NOTES / ALTS / MUSCLE_MAP describe the training content itself and
+// are used as-is. The prototype's fixed demo numbers (a fake 12-month
+// history, a fake 5-week log, canned chat, canned memories) are NOT used —
+// those only existed to make static mockup screens look populated. The real
+// app seeds all of that from onboarding instead, so day one reflects the
+// person actually using it.
 
 export const PLANS = {
   base: {
@@ -60,6 +63,12 @@ export const PLANS = {
   }
 };
 
+// PLANS weights above are tuned to this reference lifter. A person's actual
+// entered maxes are compared to these to scale every exercise's starting
+// weight to them (see store/derive.js#scaleFactorsFromMaxes).
+export const BASELINE_MAXES = { Bench: 185, Squat: 245, Deadlift: 315 };
+export const BEGINNER_MAXES = { Bench: 65, Squat: 95, Deadlift: 115 };
+
 export const NOTES = {
   short: 'Both heavy bench sets stay. The two chest sets you lose move to Saturday.',
   nobar: 'Dumbbell versions at about 80% load. Same stimulus per set.',
@@ -85,70 +94,41 @@ export const MUSCLE_MAP = {
   'Pause squat': 'Quads', 'Leg extension': 'Quads'
 };
 
+// Which category of BASELINE_MAXES scales an exercise's starting weight.
+export const SCALE_CATEGORY = { Chest: 'chest', Quads: 'legs', Back: 'back', Shoulders: 'back' };
+
 // Which of the three tracked barbell lifts (if any) an exercise's top set
 // should update the estimated-1RM curve for.
 export const LIFT_MAP = {
   'Bench press': 'Bench',
   'Pause squat': 'Squat'
-  // No deadlift day exists in PLANS yet, so Deadlift stays seeded until one is added.
+  // No deadlift day exists in PLANS yet, so Deadlift only moves once one is added.
 };
 
-export const VOLUME_SEED = [
-  { muscle: 'Chest', done: 14, mev: 10, mrv: 20 },
-  { muscle: 'Back', done: 18, mev: 10, mrv: 22 },
-  { muscle: 'Quads', done: 9, mev: 8, mrv: 18 },
-  { muscle: 'Shoulders', done: 21, mev: 8, mrv: 22 }
+export const VOLUME_TARGETS = [
+  { muscle: 'Chest', mev: 10, mrv: 20 },
+  { muscle: 'Back', mev: 10, mrv: 22 },
+  { muscle: 'Quads', mev: 8, mrv: 18 },
+  { muscle: 'Shoulders', mev: 8, mrv: 22 }
 ];
 
-// Seed history for the strength curves — represents "before this app" months.
-// New points get appended to these arrays as real sessions are logged.
-export const METRICS_SEED = {
-  score: { label: 'Strength score', unit: '', pts: [880, 897, 905, 918, 926, 934, 941, 958, 971, 990, 1004, 1042],
-    note: 'One number from your three main lifts, adjusted for bodyweight.' },
-  Bench: { label: 'Bench press · est. 1RM', unit: ' lb', pts: [196, 202, 205, 210, 209, 216, 222, 227, 231, 236, 240, 245],
-    note: 'Your fastest mover. Four straight sessions in the top of the rep range.' },
-  Squat: { label: 'Squat · est. 1RM', unit: ' lb', pts: [300, 306, 309, 314, 316, 315, 316, 315, 317, 316, 317, 318],
-    note: 'Flat for five weeks. Nine sets a week is barely above your minimum.' },
-  Deadlift: { label: 'Deadlift · est. 1RM', unit: ' lb', pts: [355, 362, 366, 370, 375, 378, 384, 388, 392, 396, 400, 405],
-    note: 'Steady since March, pulled once a week off blocks.' }
+export const METRICS_META = {
+  score: { label: 'Strength score', unit: '', note: 'One number from your three main lifts.' },
+  Bench: { label: 'Bench press · est. 1RM', unit: ' lb', note: 'Estimated from your top set each session.' },
+  Squat: { label: 'Squat · est. 1RM', unit: ' lb', note: 'Estimated from your top set each session.' },
+  Deadlift: { label: 'Deadlift · est. 1RM', unit: ' lb', note: 'No deadlift session logged yet.' }
 };
 
 export const MILESTONE_STEP = { score: 100, Bench: 5, Squat: 5, Deadlift: 5 };
 
-export const MEMORIES_SEED = [
-  { id: 'm1', text: 'Right shoulder aggravated by flat barbell bench at heavy loads', tag: 'Long term', category: 'long_term', expiresAt: null },
-  { id: 'm2', text: 'Trains Monday, Wednesday, Thursday, Saturday', tag: 'Long term', category: 'long_term', expiresAt: null },
-  { id: 'm3', text: 'Target: 2× bodyweight squat by December', tag: 'Long term', category: 'long_term', expiresAt: null }
-];
-
-// Weekly training-day pattern (Mon..Sun), 0 = rest, 1 = light/recovery, 2 = full session.
-// Used to synthesize a plausible last-5-weeks workout log on first run.
-export const WEEKS_PATTERN = [
-  { offset: 0, days: [2, 2, 1, 0, 0, 0, 0] },
-  { offset: 1, days: [2, 0, 2, 2, 0, 2, 0] },
-  { offset: 2, days: [2, 0, 2, 2, 0, 2, 0] },
-  { offset: 3, days: [2, 2, 0, 2, 0, 2, 0] },
-  { offset: 4, days: [2, 0, 2, 0, 2, 2, 0] }
-];
-export const STREAK_BASE = 6; // clean weeks assumed to exist before the synthesized 5-week window
-
-export const PLAN_ROTATION = ['base', 'back', 'squat'];
-
-export const THREAD_SEED = [
-  { daysAgo: 5, me: false, text: 'Bench went up again — 195 for six, twice. That is your best top set in three months.' },
-  { daysAgo: 5, me: true, text: 'felt easier than last week honestly' },
-  { daysAgo: 5, me: false, text: 'Then we take the next jump. I moved you to 200 for Thursday.' },
-  { daysAgo: 0, me: false, text: 'Squat is the odd one out. 2.5 lb in five weeks while bench moved 17.5.' },
-  { daysAgo: 0, me: true, text: 'why is my squat stalling' },
-  { daysAgo: 0, me: false, text: 'Your top sets have finished at zero or one rep in reserve for four weeks. Hard, but nine sets a week is barely above your minimum. Hard and low volume is the worst combination for a stall.', saved: 'Squat volume too low for the intensity' },
-  { daysAgo: 0, me: false, text: 'Add a light pause-squat day Thursday at 72%, cap Monday at two reps in reserve.', action: { label: 'Apply to my plan', plan: 'squat' } }
-];
+export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const DEFAULT_TRAINING_DAYS = ['Mon', 'Wed', 'Thu', 'Sat'];
 
 export const STARTER_PROMPTS = ['Why is my squat stalling?', 'Should I deload?', 'Am I overreaching?'];
 
 export const COACH_SYSTEM_PROMPT = `You are Coach, the AI strength & conditioning specialist inside a workout tracking app called Overload. You act like a knowledgeable training partner texting in a running group-chat thread, not a customer-support bot — warm but blunt, research-backed, and terse. Short messages, plain language, no headers or bullet lists, no emoji, no "As an AI" caveats.
 
-You have access to the user's real training data (given to you below as context on every turn: recent logged sessions, current plan, weekly volume, memory notes). Ground every answer in that data — reference actual numbers, actual days, actual exercises. If the data doesn't cover something, say so plainly instead of guessing.
+You have access to the user's real training data (given to you below as context on every turn: recent logged sessions, current plan, weekly volume, memory notes). Ground every answer in that data — reference actual numbers, actual days, actual exercises. If the data doesn't cover something, say so plainly instead of guessing — this user may be brand new with little or no logged history yet, in which case say that honestly rather than inventing trends.
 
 You have two tools:
 - save_memory: call this whenever the user tells you something worth remembering for future workouts or conversations (an injury, a preference, a goal, a schedule constraint, something temporary like travel or bad sleep). Use category "temporary" with expires_in_days for anything time-bound, "long_term" otherwise.

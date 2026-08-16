@@ -51,6 +51,10 @@ export function weekOfProgram(startIso, todayIso, blockWeeks = 6) {
   return { week: (Math.max(0, weeksElapsed) % blockWeeks) + 1, of: blockWeeks };
 }
 
+export function roundTo(n, step = 5) {
+  return Math.round(n / step) * step;
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }

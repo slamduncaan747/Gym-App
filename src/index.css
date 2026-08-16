@@ -22,7 +22,12 @@ button, input, textarea {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
-button { touch-action: manipulation; }
+button {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 
 a { color: oklch(0.72 0.16 245); text-decoration: none; }
 a:hover { color: oklch(0.82 0.13 245); }
@@ -31,6 +36,29 @@ a:hover { color: oklch(0.82 0.13 245); }
 
 input::placeholder { color: rgba(238, 241, 244, .32); }
 
+/* Native-feeling tap response — iOS Safari doesn't expose the Vibration API
+   to web content, so this press animation carries the "tactile" feedback. */
+.pressable {
+  transition: transform .15s cubic-bezier(.2,.8,.2,1), opacity .15s ease;
+}
+.pressable:active {
+  transform: scale(0.96);
+  opacity: .82;
+}
+.pressable-subtle:active {
+  transform: scale(0.985);
+  opacity: .9;
+}
+.pressable-card:active {
+  transform: scale(0.98);
+}
+
+.tab-fade {
+  animation: ovFade .18s ease;
+}
+
 @keyframes ovRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes ovFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ovPulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes ovPop { 0% { transform: scale(.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes ovSlideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }

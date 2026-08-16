@@ -16,14 +16,14 @@ export default function TabBar({ tab, unread, onSelect }) {
         const active = tab === t.k;
         const badge = t.k === 'coach' && !active ? unread : 0;
         return (
-          <button key={t.k} onClick={() => onSelect(t.k)} style={{
+          <button key={t.k} className="pressable-subtle" onClick={() => onSelect(t.k)} style={{
             flex: 1, background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 7, paddingTop: 12, height: 68, color: active ? ACC_TEXT : 'rgba(238,241,244,.33)', position: 'relative'
           }}>
             <span style={{
               width: 13, height: 13, borderRadius: t.radius, border: '2.5px solid currentColor',
-              background: active ? ACC : 'transparent', display: 'block'
+              background: active ? ACC : 'transparent', display: 'block', transition: 'background .2s ease'
             }} />
             <span style={{ fontFamily: 'Chivo,sans-serif', fontSize: 11.5, fontWeight: 700, letterSpacing: '-.01em' }}>{t.label}</span>
             {badge > 0 && (

@@ -5,12 +5,15 @@ import { deriveVolume, deriveWeeks, deriveStreak } from '../store/derive.js';
 import { askCoach, CoachError } from '../lib/claude.js';
 import { ACC, ACC_TEXT, BUBBLE } from '../store/theme.js';
 import { todayISO, weekdayName, dayLabel, uid } from '../lib/format.js';
+import { haptic } from '../lib/haptics.js';
+import { useKeyboardInset } from '../lib/useKeyboardInset.js';
 
 export default function Coach() {
   const { state, dispatch } = useStore();
   const [draft, setDraft] = useState('');
   const scrollRef = useRef(null);
   const todayIso = todayISO();
+  const kbInset = useKeyboardInset();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -19,6 +22,7 @@ export default function Coach() {
   async function send(text) {
     const t = text.trim();
     if (!t) return;
+    haptic.tap();
     setDraft('');
     if (!state.apiKey) { dispatch({ type: 'TOGGLE_SETTINGS' }); return; }
 
@@ -50,6 +54,7 @@ export default function Coach() {
           }
         }
       });
+      haptic.success();
       dispatch({
         type: 'APPEND_MESSAGE', message: {
           id: uid(), ts: todayIso, me: false, text: result.text,
@@ -59,6 +64,7 @@ export default function Coach() {
         }
       });
     } catch (err) {
+      haptic.warning();
       const msg = err instanceof CoachError && err.message === 'auth'
         ? "That API key didn't work — check it in Settings."
         : "Couldn't reach Coach — check your connection and try again.";
@@ -72,23 +78,23 @@ export default function Coach() {
   const status = state.typing ? 'typing…' : (lastSession ? `read your ${dayLabel(lastSession.date, todayIso).toLowerCase()} session` : 'ready when you are');
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="tab-fade" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '16px 20px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: 99, background: ACC, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', flex: 'none' }}>C</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16.5, fontWeight: 800, letterSpacing: '-.02em' }}>Coach</div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(238,241,244,.38)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status}</div>
         </div>
-        <button onClick={() => dispatch({ type: 'TOGGLE_SETTINGS' })} style={iconBtn} aria-label="Coach settings">⚙</button>
-        <button onClick={() => dispatch({ type: 'TOGGLE_MEMORY' })} style={{ ...pillBtn, color: state.memoryOpen ? ACC_TEXT : 'rgba(238,241,244,.7)' }}>Memory {state.memories.length}</button>
+        <button className="pressable-subtle" onClick={() => { haptic.tap(); dispatch({ type: 'TOGGLE_SETTINGS' }); }} style={iconBtn} aria-label="Coach settings">⚙</button>
+        <button className="pressable-subtle" onClick={() => { haptic.tap(); dispatch({ type: 'TOGGLE_MEMORY' }); }} style={{ ...pillBtn, color: state.memoryOpen ? ACC_TEXT : 'rgba(238,241,244,.7)' }}>Memory {state.memories.length}</button>
       </div>
 
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 16, WebkitOverflowScrolling: 'touch' }}>
         {state.chatThread.map((m, i) => {
           const prev = state.chatThread[i - 1];
           const showDay = !prev || prev.ts !== m.ts;
           return (
-            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.me ? 'flex-end' : 'flex-start', gap: 5 }}>
+            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.me ? 'flex-end' : 'flex-start', gap: 5, animation: 'ovRise .2s ease' }}>
               {showDay && <div style={{ alignSelf: 'center', fontSize: 12.5, fontWeight: 600, color: 'rgba(238,241,244,.28)', padding: '8px 0' }}>{dayLabel(m.ts, todayIso)}</div>}
               <div style={{
                 maxWidth: '80%', padding: '13px 16px', borderRadius: m.me ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
@@ -96,7 +102,7 @@ export default function Coach() {
               }}>{m.text}</div>
               {m.saved && <div style={{ fontSize: 12.5, fontWeight: 600, color: 'oklch(0.72 0.16 245)', paddingLeft: 4 }}>Saved to memory · {m.saved}</div>}
               {m.action && !m.actionConsumed && (
-                <button onClick={() => dispatch({ type: 'CONSUME_ACTION', id: m.id })} style={{
+                <button className="pressable" onClick={() => { haptic.success(); dispatch({ type: 'CONSUME_ACTION', id: m.id }); }} style={{
                   marginTop: 4, height: 46, padding: '0 20px', borderRadius: 14, border: 'none', background: ACC,
                   color: '#fff', fontFamily: 'Chivo,sans-serif', fontSize: 15, fontWeight: 800, cursor: 'pointer', animation: 'ovRise .3s ease'
                 }}>{m.action.label}</button>
@@ -113,9 +119,9 @@ export default function Coach() {
         )}
       </div>
 
-      <div style={{ padding: '6px 20px 0', display: 'flex', gap: 9, overflowX: 'auto' }}>
+      <div style={{ padding: '6px 20px 0', display: 'flex', gap: 9, overflowX: 'auto', flex: 'none' }}>
         {STARTER_PROMPTS.map(p => (
-          <button key={p} onClick={() => send(p)} style={{
+          <button key={p} className="pressable-subtle" onClick={() => send(p)} style={{
             flex: 'none', height: 38, padding: '0 15px', borderRadius: 12, border: '1.5px solid rgba(255,255,255,.13)',
             background: 'transparent', color: 'rgba(238,241,244,.65)', fontFamily: 'Chivo,sans-serif', fontSize: 14,
             fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
@@ -123,17 +129,20 @@ export default function Coach() {
         ))}
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); send(draft); }} style={{ padding: '12px 20px calc(env(safe-area-inset-bottom, 0px) + 14px)', display: 'flex', gap: 10 }}>
+      <form
+        onSubmit={e => { e.preventDefault(); send(draft); }}
+        style={{ flex: 'none', padding: `12px 20px calc(${kbInset > 0 ? kbInset + 'px' : 'env(safe-area-inset-bottom, 0px)'} + 14px)`, display: 'flex', gap: 10, transition: 'padding .1s ease' }}
+      >
         <input
           value={draft}
           onChange={e => setDraft(e.target.value)}
           placeholder={state.apiKey ? 'Message Coach' : 'Add an API key in Settings to chat'}
           style={{
             flex: 1, height: 50, borderRadius: 18, background: BUBBLE, border: 'none', color: '#EEF1F4',
-            fontSize: 15, padding: '0 18px', outline: 'none'
+            fontSize: 16, padding: '0 18px', outline: 'none'
           }}
         />
-        <button type="submit" disabled={!draft.trim()} style={{
+        <button type="submit" className="pressable" disabled={!draft.trim()} style={{
           flex: 'none', width: 50, height: 50, borderRadius: 18, border: 'none', background: draft.trim() ? ACC : 'rgba(255,255,255,.08)',
           color: '#fff', fontSize: 18, fontWeight: 800, cursor: draft.trim() ? 'pointer' : 'default'
         }}>↑</button>
