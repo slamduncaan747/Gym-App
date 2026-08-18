@@ -7,9 +7,10 @@ It's a client-only Vite + React app — no backend, no accounts. Everything live
 ## What's real
 
 - **Onboarding** — first launch walks you through name, units, training days, your actual current lift numbers (or a conservative beginner default), anything Coach should know (injuries, goals, equipment — saved straight to memory), and an optional Coach API key. Nothing is fabricated: your plan's starting weights are scaled to *your* numbers, not a demo profile.
-- **Progressive overload** — a real gap in most workout-tracker demos: this one doesn't reset to the same weights every session. Each exercise's ending weight carries forward as next time's starting point, so the app actually adapts as you get stronger (or need to back off).
-- **Today / active session / logging** — starting a session, logging sets, the auto weight-adjustment logic (log reps, it adjusts remaining sets), rest timer, swaps, and session summaries all work and persist across app restarts.
-- **Numbers** — empty until you log something, then genuinely built from it: estimated 1RM (Epley formula) on Bench and Squat updates from real top sets, the strength score recomputes from those, weekly volume and the consistency grid are computed from real logged dates. (No deadlift day exists in the seed plans yet, so the Deadlift number only updates once you add one.)
+- **Program generation** — there's no fixed list of workouts. `src/store/exercises.js` is a ~40-exercise library (muscle, equipment, tier, rep range) with weekly volume landmarks (MEV/MRV, the evidence-based minimum/maximum effective set ranges) per muscle group; `src/store/program.js` builds each day from a split template matched to your training-day count (full body / upper-lower / push-pull-legs), then picks exercises and set counts by checking what you've *actually* logged this week — a muscle that's under its weekly minimum gets prioritized, one near its weekly max gets capped, and the reasoning shows up as a note on the Today screen (the "AI Rebalancer" from the original brief, made real). The pivot chips (short on time, no barbells, focus a muscle, sore) regenerate the day through the same engine instead of switching between canned plans.
+- **Progressive overload** — each exercise's ending weight carries forward as next time's starting point (tracked per-exercise, independent of which day it's scheduled on), so the app actually adapts as you get stronger or need to back off, instead of resetting every session.
+- **Today / active session / logging** — starting a session, logging sets, the auto weight-adjustment logic (log reps, it adjusts remaining sets), rest timer, swaps (now pulled from the real exercise library, matched by muscle), and session summaries all work and persist across app restarts. Set/time counts on the Today screen are computed directly from the generated session, not a separate hand-authored estimate.
+- **Numbers** — empty until you log something, then genuinely built from it: estimated 1RM (Epley formula) on Bench, Squat, and Deadlift updates from real top sets, the strength score recomputes from those, weekly volume (now across nine muscle groups, with MEV/MRV tick marks on each bar) and the consistency grid are computed from real logged dates.
 - **Coach** — calls the real Claude API (`claude-sonnet-5`) directly from the browser using your own Anthropic API key, with tool use so it can save memories and propose plan changes (shown as an "Apply" button, never applied without you tapping it). It's given your recent sessions, weekly volume, streak, and memory as context on every message.
 - **Memory** — durable/expiring facts Coach saves (plus whatever you tell it during onboarding) are stored locally and re-injected into every future conversation; expired temporary ones drop automatically.
 
@@ -56,10 +57,15 @@ Settings → **Reset app data** wipes everything (`localStorage`) and takes you 
 
 ```
 src/
-  store/       state shape, reducer, localStorage persistence, seed data, derived Numbers math
+  store/       state shape, reducer, localStorage persistence, the exercise library, the
+               program generator, derived Numbers math
   screens/     Onboarding, Home, Numbers, Coach, Session (the full-screen active logger), and overlay sheets
-  components/  TabBar, the strength-curve Chart
+  components/  TabBar, the strength-curve Chart, RingProgress
   lib/         date/weight/1RM math, haptics, the keyboard-inset hook, the Claude API client
 public/
   manifest.webmanifest, icons/, sw.js   — PWA installability + offline app shell
 ```
+
+## A note on the exercise science
+
+The volume landmarks (MEV/MRV) and split templates follow commonly cited evidence-based ranges from the hypertrophy training literature (the kind of guidance you'd find in Renaissance Periodization-style resources) — reasonable defaults, not a substitute for individualized coaching, and not sourced from a specific clinical citation. The relative-strength coefficients that scale accessory exercises off your Bench/Squat/Deadlift numbers are similarly ballpark heuristics; the app leans on this being self-correcting (both the in-session and session-to-session auto-adjust) rather than needing those starting numbers to be exact.

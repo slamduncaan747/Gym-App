@@ -3,9 +3,11 @@ export function freshState() {
     onboarded: false,
     profile: { name: '', trainingDays: [] },
     tab: 'home',
-    plan: 'base',
+    todayPlan: null,
     pivot: null,
     session: null, // null | 'active' | 'paused'
+    sessionTitle: '',
+    sessionPivot: null,
     ex: null,
     exIdx: 0,
     reps: null,

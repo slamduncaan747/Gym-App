@@ -1,5 +1,5 @@
 import { useStore } from '../store/StoreContext.jsx';
-import { ALTS, ALT_FALLBACK } from '../store/seed.js';
+import { alternativesFor } from '../store/program.js';
 import { ACC, ACC_SOFT, ACC_TEXT, RAISED } from '../store/theme.js';
 import { fmtElapsed, toDisplayWeight, todayISO } from '../lib/format.js';
 import { haptic } from '../lib/haptics.js';
@@ -134,7 +134,7 @@ export default function Session() {
 }
 
 function SwapSheet({ cur, dispatch }) {
-  const alts = ALTS[cur.name] || ALT_FALLBACK;
+  const alts = alternativesFor(cur.seedName || cur.name);
   return (
     <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,7,9,.72)', display: 'flex', alignItems: 'flex-end', zIndex: 55, animation: 'ovFade .18s ease' }}>
       <div style={{ width: '100%', background: '#15171B', borderRadius: '28px 28px 0 0', padding: `28px 24px calc(env(safe-area-inset-bottom, 0px) + 24px)`, animation: 'ovRise .22s ease' }}>

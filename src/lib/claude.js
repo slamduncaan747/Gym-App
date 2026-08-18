@@ -24,7 +24,7 @@ const TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        plan: { type: 'string', enum: ['base', 'short', 'nobar', 'sore', 'back', 'squat'] },
+        plan: { type: 'string', enum: ['short', 'nobar', 'chest', 'back', 'legs', 'sore', 'reset'], description: '"reset" clears back to the normal rotation.' },
         button_label: { type: 'string', description: 'Short label for the apply button, e.g. "Apply to my plan"' },
         rationale: { type: 'string', description: 'One short sentence shown on the Today screen explaining the change.' }
       },

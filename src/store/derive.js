@@ -1,5 +1,6 @@
-import { PLANS, VOLUME_TARGETS, MUSCLE_MAP, LIFT_MAP, MILESTONE_STEP, SCALE_CATEGORY, BASELINE_MAXES } from './seed.js';
-import { mondayOf, addDays, estimate1RM, roundTo } from '../lib/format.js';
+import { VOLUME_TARGETS, EXERCISES_BY_NAME } from './exercises.js';
+import { MILESTONE_STEP, BASELINE_MAXES } from './seed.js';
+import { mondayOf, addDays, estimate1RM } from '../lib/format.js';
 
 export function scaleFactorsFromMaxes(maxes) {
   return {
@@ -13,44 +14,25 @@ export function scoreFromMaxes(maxes) {
   return Math.round(((maxes.Bench || 0) + (maxes.Squat || 0) + (maxes.Deadlift || 0)) * 1.05);
 }
 
-// Builds the current session's exercises: PLANS' seed weights, scaled either
-// by a per-exercise progression ratio carried over from previous sessions
-// (state.exerciseWeights), or on first use, by the person's own starting
-// numbers from onboarding (state.scaleFactors). Every set also carries
-// seedName — the plan's canonical exercise identity — so a mid-session Swap
-// (which only changes the displayed name) doesn't break progression tracking.
-export function buildSessionEx(planKey, state) {
-  return PLANS[planKey].ex.map(e => {
-    const cat = SCALE_CATEGORY[MUSCLE_MAP[e.name]];
-    const ratio = e.sets[0][0] > 0 ? (state.exerciseWeights[e.name] ?? (cat ? state.scaleFactors[cat] : 1) ?? 1) : 1;
-    return {
-      name: e.name, seedName: e.name, range: e.range, target: e.target,
-      sets: e.sets.map(([w, r]) => ({ w: w > 0 ? roundTo(w * ratio, 5) : 0, r, done: false, logged: null }))
-    };
-  });
-}
-
 // After a session, carries each trained exercise's ending weight forward as
 // next time's starting ratio — real progressive overload across sessions,
-// instead of every workout resetting to the same seed numbers.
-export function nextExerciseWeights(prevWeights, planKey, ex) {
+// instead of every workout resetting to the same starting numbers.
+export function nextExerciseWeights(prevWeights, ex) {
   const out = { ...prevWeights };
   for (const e of ex) {
     const done = e.sets.filter(s => s.done);
     if (!done.length) continue;
-    const seedDef = PLANS[planKey].ex.find(x => x.name === e.seedName);
-    const seedFirst = seedDef ? seedDef.sets[0][0] : 0;
-    if (seedFirst <= 0) continue;
-    out[e.seedName] = Math.round((done[done.length - 1].w / seedFirst) * 100) / 100;
+    const seedDef = EXERCISES_BY_NAME[e.seedName];
+    if (!seedDef || seedDef.baseWeight <= 0) continue;
+    out[e.seedName] = Math.round((done[done.length - 1].w / seedDef.baseWeight) * 100) / 100;
   }
   return out;
 }
 
-export function sessionFromCompletedEx(planKey, ex, date, id) {
-  const sets = ex.flatMap(e => e.sets.filter(s => s.done).map(s => ({ exercise: e.name, muscle: MUSCLE_MAP[e.name] || null, weight: s.w, reps: s.logged, target: e.range })));
+export function sessionFromCompletedEx(title, pivot, ex, date, id) {
+  const sets = ex.flatMap(e => e.sets.filter(s => s.done).map(s => ({ exercise: e.name, muscle: e.muscle || null, weight: s.w, reps: s.logged, target: e.range })));
   const volume = sets.reduce((a, s) => a + s.weight * s.reps, 0);
-  const p = PLANS[planKey];
-  return { id, date, planKey, title: p ? p.title : ex[0]?.name || 'Workout', durationSec: null, sets, volume };
+  return { id, date, title, pivot: pivot || null, durationSec: null, sets, volume };
 }
 
 // Given a just-completed session's exercises, returns { Bench: 255, Squat: 320 }
@@ -58,7 +40,7 @@ export function sessionFromCompletedEx(planKey, ex, date, id) {
 export function metricDeltasFromSession(ex) {
   const out = {};
   for (const e of ex) {
-    const key = LIFT_MAP[e.seedName || e.name];
+    const key = EXERCISES_BY_NAME[e.seedName]?.tracksLift;
     if (!key) continue;
     const top = e.sets.filter(s => s.done).reduce((m, s) => Math.max(m, estimate1RM(s.w, s.logged)), 0);
     if (top > 0) out[key] = Math.max(out[key] || 0, top);
@@ -101,11 +83,11 @@ export function deriveVolume(workoutLog, todayIso) {
       doneByMuscle[set.muscle] = (doneByMuscle[set.muscle] || 0) + 1;
     }
   }
-  const cap = 24;
   return VOLUME_TARGETS.map(v => {
     const done = doneByMuscle[v.muscle] || 0;
     const over = done > v.mrv, under = done < v.mev;
-    return { muscle: v.muscle, done, mev: v.mev, mrv: v.mrv, pct: Math.round((done / cap) * 100), over, under };
+    const cap = v.mrv * 1.15;
+    return { muscle: v.muscle, done, mev: v.mev, mrv: v.mrv, pct: Math.min(100, Math.round((done / cap) * 100)), over, under };
   });
 }
 
@@ -118,7 +100,7 @@ export function deriveWeeks(workoutLog, todayIso, weekCount = 5) {
     for (let d = 0; d < 7; d++) {
       const date = addDays(monday, d);
       const sessions = workoutLog.filter(s => s.date === date);
-      const level = sessions.some(s => s.planKey !== 'sore') ? 2 : (sessions.length ? 1 : 0);
+      const level = sessions.some(s => s.pivot !== 'sore') ? 2 : (sessions.length ? 1 : 0);
       days.push({ date, level });
     }
     weeks.push({ label: w === 0 ? 'Now' : '-' + w, days });

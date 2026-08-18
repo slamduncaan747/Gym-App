@@ -33,7 +33,7 @@ export default function Coach() {
     const context = {
       today: todayIso,
       weekday: weekdayName(todayIso),
-      planTitle: state.plan,
+      planTitle: state.todayPlan?.title || '',
       recentSessions: [...state.workoutLog].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
       volume: deriveVolume(state.workoutLog, todayIso),
       streak: deriveStreak(weeks),

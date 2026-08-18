@@ -21,9 +21,9 @@ export default function App() {
 
   return (
     <div style={{
-      height: '100dvh', width: '100vw', display: 'flex', flexDirection: 'column',
+      position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
       background: SURFACE, color: TEXT, fontFamily: 'Chivo, system-ui, sans-serif',
-      position: 'relative', overflow: 'hidden'
+      overflow: 'hidden'
     }}>
       <div style={{ flex: 1, overflowY: inSession ? 'hidden' : 'auto', overflowX: 'hidden', minHeight: 0, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         {state.tab === 'home' && <Home />}

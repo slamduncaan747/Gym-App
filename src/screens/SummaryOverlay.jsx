@@ -1,5 +1,4 @@
 import { useStore } from '../store/StoreContext.jsx';
-import { PLANS } from '../store/seed.js';
 import { ACC, ACC_TEXT } from '../store/theme.js';
 import { toDisplayWeight } from '../lib/format.js';
 import { haptic } from '../lib/haptics.js';
@@ -24,7 +23,7 @@ export default function SummaryOverlay() {
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase', color: ACC_TEXT }}>Session complete</div>
-        <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-.045em', lineHeight: 1.04, marginTop: 16, textWrap: 'balance' }}>{PLANS[state.plan].title}</div>
+        <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-.045em', lineHeight: 1.04, marginTop: 16, textWrap: 'balance' }}>{state.sessionTitle}</div>
         <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 26 }}>
           {stats.map((st, i) => (
             <div key={st.label} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, animation: `ovRise .35s ease ${i * .06}s both` }}>

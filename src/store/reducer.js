@@ -1,6 +1,11 @@
-import { metricDeltasFromSession, sessionFromCompletedEx, buildSessionEx, nextExerciseWeights, scaleFactorsFromMaxes, scoreFromMaxes } from './derive.js';
+import { metricDeltasFromSession, sessionFromCompletedEx, nextExerciseWeights, scaleFactorsFromMaxes, scoreFromMaxes } from './derive.js';
+import { generateSession, rebuildForSwap } from './program.js';
 import { freshState } from './initialState.js';
 import { addDays, uid } from '../lib/format.js';
+
+function cloneEx(ex) {
+  return ex.map(e => ({ ...e, sets: e.sets.map(s => ({ ...s })) }));
+}
 
 export function reducer(state, action) {
   switch (action.type) {
@@ -22,13 +27,14 @@ export function reducer(state, action) {
         ? `Hey${greetName} — I'm Coach. Got it, I'll keep that in mind when I'm building and adjusting your sessions. Ask me anything, anytime.`
         : `Hey${greetName} — I'm Coach. I'll keep an eye on your training and speak up when something's worth flagging — plateaus, volume that's too low, when it's time to deload. Ask me anything.`;
 
+      const next = { ...state, profile: { name: name.trim(), trainingDays }, scaleFactors };
       return {
-        ...state,
+        ...next,
         onboarded: true,
-        profile: { name: name.trim(), trainingDays },
         weightUnit, apiKey,
-        scaleFactors, metricPoints, memories,
+        metricPoints, memories,
         programStartDate: todayIso,
+        todayPlan: generateSession(next, null),
         chatThread: [{ id: uid(), ts: todayIso, me: false, text: welcome, saved: null, action: null, actionConsumed: false }]
       };
     }
@@ -36,11 +42,12 @@ export function reducer(state, action) {
     case 'UPDATE_PROFILE': {
       const { name, trainingDays, maxes } = action;
       const scaleFactors = maxes ? scaleFactorsFromMaxes(maxes) : state.scaleFactors;
-      return {
+      const next = {
         ...state,
         profile: { name: name ?? state.profile.name, trainingDays: trainingDays ?? state.profile.trainingDays },
         scaleFactors
       };
+      return { ...next, todayPlan: generateSession(next, state.pivot) };
     }
 
     case 'RESET_APP':
@@ -49,12 +56,17 @@ export function reducer(state, action) {
     case 'SET_TAB':
       return { ...state, tab: action.tab, unread: action.tab === 'coach' ? 0 : state.unread };
 
-    case 'LOAD_PLAN':
-      return { ...state, plan: action.plan, pivot: action.pivot, exIdx: 0, ex: null, session: null };
+    case 'SET_PIVOT': {
+      const pivot = state.pivot === action.pivot ? null : action.pivot;
+      return { ...state, pivot, todayPlan: generateSession(state, pivot), exIdx: 0, ex: null, session: null };
+    }
 
     case 'START_SESSION': {
-      const ex = buildSessionEx(state.plan, state);
-      return { ...state, session: 'active', ex, exIdx: 0, seconds: 0, rest: 0, adjustNote: '', reps: ex[0].sets[0].r };
+      const ex = cloneEx(state.todayPlan.ex);
+      return {
+        ...state, session: 'active', ex, exIdx: 0, seconds: 0, rest: 0, adjustNote: '', reps: ex[0].sets[0].r,
+        sessionTitle: state.todayPlan.title, sessionPivot: state.todayPlan.pivot
+      };
     }
     case 'RESUME_SESSION':
       return { ...state, session: 'active' };
@@ -113,7 +125,7 @@ export function reducer(state, action) {
       const minutes = Math.round(state.seconds / 60);
 
       const todayIso = action.todayIso;
-      const entry = sessionFromCompletedEx(state.plan, state.ex, todayIso, uid());
+      const entry = sessionFromCompletedEx(state.sessionTitle, state.sessionPivot, state.ex, todayIso, uid());
       entry.durationSec = state.seconds;
 
       const deltas = metricDeltasFromSession(state.ex);
@@ -129,13 +141,16 @@ export function reducer(state, action) {
         }
       }
 
+      const workoutLog = [...state.workoutLog, entry];
+      const exerciseWeights = nextExerciseWeights(state.exerciseWeights, state.ex);
+      const nextState = { ...state, workoutLog, exerciseWeights, pivot: null };
+
       return {
-        ...state,
+        ...nextState,
         session: null, rest: 0, summaryOpen: true,
         lastSummary: { doneSets, totalSets, minutes, volumeLifted },
-        workoutLog: [...state.workoutLog, entry],
         metricPoints,
-        exerciseWeights: nextExerciseWeights(state.exerciseWeights, state.plan, state.ex)
+        todayPlan: generateSession(nextState, null)
       };
     }
 
@@ -146,8 +161,13 @@ export function reducer(state, action) {
       return { ...state, swapOpen: true };
     case 'CLOSE_SWAP':
       return { ...state, swapOpen: false };
-    case 'APPLY_SWAP':
-      return { ...state, swapOpen: false, ex: state.ex.map((e, k) => k !== state.exIdx ? e : { ...e, name: action.name }) };
+    case 'APPLY_SWAP': {
+      const cur = state.ex[state.exIdx];
+      const rebuilt = rebuildForSwap(action.name, cur.sets.length, state);
+      if (!rebuilt) return { ...state, swapOpen: false };
+      const entry = { ...rebuilt, sets: rebuilt.sets.map(s => ({ ...s, done: false, logged: null })) };
+      return { ...state, swapOpen: false, ex: state.ex.map((e, k) => k !== state.exIdx ? e : entry) };
+    }
 
     case 'SET_METRIC':
       return { ...state, metric: action.metric };
@@ -185,9 +205,11 @@ export function reducer(state, action) {
     case 'CONSUME_ACTION': {
       const msg = state.chatThread.find(m => m.id === action.id);
       if (!msg || !msg.action || msg.actionConsumed) return state;
+      const pivot = msg.action.plan === 'reset' ? null : msg.action.plan;
+      const next = { ...state, pivot };
       return {
-        ...state,
-        plan: msg.action.plan, pivot: msg.action.plan, tab: 'home',
+        ...next,
+        todayPlan: generateSession(next, pivot), tab: 'home',
         session: null, ex: null, exIdx: 0, adjustNote: '', rest: 0,
         chatThread: state.chatThread.map(m => m.id === action.id ? { ...m, actionConsumed: true } : m)
       };

@@ -66,8 +66,8 @@ export default function Onboarding() {
 
   return (
     <div style={{
-      height: '100dvh', width: '100vw', background: '#0A0B0D', color: '#EEF1F4',
-      display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
+      position: 'fixed', inset: 0, background: '#0A0B0D', color: '#EEF1F4',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
       {dots}
       <div key={step} style={{
