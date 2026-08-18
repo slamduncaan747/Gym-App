@@ -1,10 +1,12 @@
 export function freshState() {
   return {
     onboarded: false,
-    profile: { name: '', trainingDays: [] },
+    profile: { name: '', trainingDays: [], splitStyle: 'auto', equipment: 'full' },
     tab: 'home',
     todayPlan: null,
     pivot: null,
+    targetMinutes: null,
+    lengthSheetOpen: false,
     session: null, // null | 'active' | 'paused'
     sessionTitle: '',
     sessionPivot: null,

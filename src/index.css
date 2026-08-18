@@ -6,7 +6,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
   overscroll-behavior: none;
-  background: #0A0B0D;
+  background: #0E0F12;
 }
 
 /* The app shell is position:fixed;inset:0 (see App.jsx / Onboarding.jsx)

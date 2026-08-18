@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { useStore } from '../store/StoreContext.jsx';
 import { alternativesFor } from '../store/program.js';
 import { ACC, ACC_SOFT, ACC_TEXT, RAISED } from '../store/theme.js';
 import { fmtElapsed, toDisplayWeight, todayISO } from '../lib/format.js';
 import { haptic } from '../lib/haptics.js';
+import { acquireWakeLock, releaseWakeLock, reacquireOnVisible } from '../lib/wakelock.js';
+import { notifyRestComplete } from '../lib/notify.js';
 
 export default function Session() {
   const { state, dispatch } = useStore();
@@ -16,6 +19,25 @@ export default function Session() {
   const unit = state.weightUnit === 'kg' ? ' kg' : ' lb';
   const cv = w => toDisplayWeight(w, state.weightUnit);
   const mins = Math.floor(state.rest / 60), secs = state.rest % 60;
+
+  // Keep the screen awake for the whole active session — no more losing the
+  // set/rest screen to auto-lock mid-workout.
+  useEffect(() => {
+    acquireWakeLock();
+    const cleanup = reacquireOnVisible();
+    return () => { releaseWakeLock(); cleanup(); };
+  }, []);
+
+  // Fire a real notification when rest finishes naturally (not on manual
+  // skip) and only while the app isn't the thing you're looking at —
+  // catches the "phone locked / switched apps mid-rest" case.
+  const prevRest = useRef(state.rest);
+  useEffect(() => {
+    if (prevRest.current === 1 && state.rest === 0 && document.visibilityState !== 'visible') {
+      notifyRestComplete(cur.name);
+    }
+    prevRest.current = state.rest;
+  }, [state.rest, cur.name]);
 
   const logSet = () => { haptic.success(); dispatch({ type: 'LOG_SET' }); };
   const shiftReps = (d) => { haptic.tap(); dispatch({ type: 'SHIFT_REPS', delta: d }); };
@@ -106,8 +128,13 @@ export default function Session() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 9, marginTop: 18 }}>
+            <button className="pressable-subtle" onClick={() => { haptic.tap(); dispatch({ type: 'ADD_REST', seconds: -15 }); }} style={{
+              flex: 'none', width: 78, height: 54, borderRadius: 17, border: '1.5px solid rgba(255,255,255,.11)',
+              background: 'transparent', color: 'rgba(238,241,244,.75)', fontFamily: 'Chivo,sans-serif', fontSize: 15.5,
+              fontWeight: 700, cursor: 'pointer'
+            }}>−15s</button>
             <button className="pressable-subtle" onClick={() => { haptic.tap(); dispatch({ type: 'ADD_REST', seconds: 15 }); }} style={{
-              flex: 'none', width: 96, height: 54, borderRadius: 17, border: '1.5px solid rgba(255,255,255,.11)',
+              flex: 'none', width: 78, height: 54, borderRadius: 17, border: '1.5px solid rgba(255,255,255,.11)',
               background: 'transparent', color: 'rgba(238,241,244,.75)', fontFamily: 'Chivo,sans-serif', fontSize: 15.5,
               fontWeight: 700, cursor: 'pointer'
             }}>+15s</button>

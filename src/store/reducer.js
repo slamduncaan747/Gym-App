@@ -10,7 +10,7 @@ function cloneEx(ex) {
 export function reducer(state, action) {
   switch (action.type) {
     case 'COMPLETE_ONBOARDING': {
-      const { name, weightUnit, trainingDays, maxes, notes, apiKey, todayIso } = action;
+      const { name, weightUnit, trainingDays, splitStyle, equipment, maxes, notes, apiKey, todayIso } = action;
       const scaleFactors = scaleFactorsFromMaxes(maxes);
       const metricPoints = {
         Bench: maxes.Bench ? [maxes.Bench] : [],
@@ -27,7 +27,7 @@ export function reducer(state, action) {
         ? `Hey${greetName} — I'm Coach. Got it, I'll keep that in mind when I'm building and adjusting your sessions. Ask me anything, anytime.`
         : `Hey${greetName} — I'm Coach. I'll keep an eye on your training and speak up when something's worth flagging — plateaus, volume that's too low, when it's time to deload. Ask me anything.`;
 
-      const next = { ...state, profile: { name: name.trim(), trainingDays }, scaleFactors };
+      const next = { ...state, profile: { name: name.trim(), trainingDays, splitStyle, equipment }, scaleFactors };
       return {
         ...next,
         onboarded: true,
@@ -40,15 +40,27 @@ export function reducer(state, action) {
     }
 
     case 'UPDATE_PROFILE': {
-      const { name, trainingDays, maxes } = action;
+      const { name, trainingDays, splitStyle, equipment, maxes } = action;
       const scaleFactors = maxes ? scaleFactorsFromMaxes(maxes) : state.scaleFactors;
       const next = {
         ...state,
-        profile: { name: name ?? state.profile.name, trainingDays: trainingDays ?? state.profile.trainingDays },
+        profile: {
+          name: name ?? state.profile.name,
+          trainingDays: trainingDays ?? state.profile.trainingDays,
+          splitStyle: splitStyle ?? state.profile.splitStyle,
+          equipment: equipment ?? state.profile.equipment
+        },
         scaleFactors
       };
       return { ...next, todayPlan: generateSession(next, state.pivot) };
     }
+
+    case 'SET_TARGET_MINUTES': {
+      const next = { ...state, targetMinutes: action.minutes };
+      return { ...next, todayPlan: generateSession(next, state.pivot) };
+    }
+    case 'TOGGLE_LENGTH_SHEET':
+      return { ...state, lengthSheetOpen: !state.lengthSheetOpen };
 
     case 'RESET_APP':
       return freshState();
@@ -108,8 +120,11 @@ export function reducer(state, action) {
       };
     }
 
-    case 'ADD_REST':
-      return { ...state, rest: state.rest + action.seconds, restTotal: state.restTotal + action.seconds };
+    case 'ADD_REST': {
+      const rest = Math.max(0, state.rest + action.seconds);
+      const restTotal = Math.max(rest, 15, state.restTotal + action.seconds);
+      return { ...state, rest, restTotal };
+    }
     case 'SKIP_REST':
       return { ...state, rest: 0 };
 

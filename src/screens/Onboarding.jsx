@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/StoreContext.jsx';
 import { WEEKDAYS, DEFAULT_TRAINING_DAYS, BEGINNER_MAXES } from '../store/seed.js';
+import { SPLIT_STYLES, EQUIPMENT_LEVELS } from '../store/exercises.js';
 import { ACC, ACC_TEXT, ACC_SOFT, BUBBLE } from '../store/theme.js';
 import { todayISO } from '../lib/format.js';
 import { haptic } from '../lib/haptics.js';
@@ -27,6 +28,8 @@ export default function Onboarding() {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('lb');
   const [days, setDays] = useState(DEFAULT_TRAINING_DAYS);
+  const [splitStyle, setSplitStyle] = useState('auto');
+  const [equipment, setEquipment] = useState('full');
   const [newLifter, setNewLifter] = useState(null); // null = undecided, true/false once chosen
   const [maxBench, setMaxBench] = useState('');
   const [maxSquat, setMaxSquat] = useState('');
@@ -51,7 +54,7 @@ export default function Onboarding() {
       };
     dispatch({
       type: 'COMPLETE_ONBOARDING',
-      name, weightUnit: unit, trainingDays: days, maxes, notes, apiKey: apiKey.trim(),
+      name, weightUnit: unit, trainingDays: days, splitStyle, equipment, maxes, notes, apiKey: apiKey.trim(),
       todayIso: todayISO()
     });
   }
@@ -66,7 +69,7 @@ export default function Onboarding() {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#0A0B0D', color: '#EEF1F4',
+      position: 'fixed', inset: 0, background: '#0E0F12', color: '#EEF1F4',
       display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
       {dots}
@@ -135,6 +138,24 @@ export default function Onboarding() {
                 );
               })}
             </div>
+            <div>
+              <div style={labelStyle}>Split style</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                {SPLIT_STYLES.map(s => {
+                  const on = splitStyle === s.k;
+                  return (
+                    <button key={s.k} className="pressable-subtle" onClick={() => { haptic.select(); setSplitStyle(s.k); }} style={{
+                      width: '100%', padding: '12px 16px', borderRadius: 14, textAlign: 'left',
+                      border: `1.5px solid ${on ? ACC : 'rgba(255,255,255,.12)'}`, background: on ? ACC_SOFT : 'transparent',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 2
+                    }}>
+                      <span style={{ fontFamily: 'Chivo,sans-serif', fontSize: 15, fontWeight: 700, color: on ? ACC_TEXT : '#EEF1F4' }}>{s.label}</span>
+                      <span style={{ fontSize: 12.5, color: 'rgba(238,241,244,.42)' }}>{s.blurb}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -162,6 +183,25 @@ export default function Onboarding() {
               alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
               fontFamily: 'Chivo,sans-serif', fontSize: 14, fontWeight: 700, color: newLifter ? ACC_TEXT : 'rgba(238,241,244,.45)'
             }}>{newLifter ? '✓ Starting with conservative beginner weights' : "I'm new to lifting — start me conservative"}</button>
+
+            <div>
+              <div style={labelStyle}>Equipment</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                {EQUIPMENT_LEVELS.map(e => {
+                  const on = equipment === e.k;
+                  return (
+                    <button key={e.k} className="pressable-subtle" onClick={() => { haptic.select(); setEquipment(e.k); }} style={{
+                      width: '100%', padding: '12px 16px', borderRadius: 14, textAlign: 'left',
+                      border: `1.5px solid ${on ? ACC : 'rgba(255,255,255,.12)'}`, background: on ? ACC_SOFT : 'transparent',
+                      cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 2
+                    }}>
+                      <span style={{ fontFamily: 'Chivo,sans-serif', fontSize: 15, fontWeight: 700, color: on ? ACC_TEXT : '#EEF1F4' }}>{e.label}</span>
+                      <span style={{ fontSize: 12.5, color: 'rgba(238,241,244,.42)' }}>{e.blurb}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 

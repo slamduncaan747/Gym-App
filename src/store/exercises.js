@@ -97,47 +97,69 @@ export const EXERCISES_BY_NAME = Object.fromEntries(EXERCISES.map(e => [e.name, 
 
 export const EASY_CARDIO = { name: 'Easy bike', muscle: null, equipment: 'machine', tier: 'conditioning', target: 'conditioning', range: '8 min', sets: [{ w: 0, r: 8 }] };
 
-// Weekly split blueprints, keyed by training-day count. Each day lists its
-// target muscles with a role: 'primary' gets a compound + accessory work
-// and the larger volume share, 'secondary' gets one lighter accessory.
-export const SPLIT_TEMPLATES = {
-  1: [
-    { title: 'Full body', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Back', r: 'primary' }, { m: 'Quads', r: 'primary' }, { m: 'Shoulders', r: 'secondary' }, { m: 'Hamstrings', r: 'secondary' }] }
+// Single-muscle-focus day blueprints — used both as the "focus" pivot chips
+// and, cycled together, as the bro-split style. Each day lists target
+// muscles with a role: 'primary' gets a compound + accessory and drives the
+// day's volume, 'secondary' gets one flat-dosed accessory.
+export const MUSCLE_FOCUS = {
+  chest: { targets: [{ m: 'Chest', r: 'primary' }, { m: 'Triceps', r: 'secondary' }, { m: 'Shoulders', r: 'secondary' }] },
+  back: { targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' }] },
+  shoulders: { targets: [{ m: 'Shoulders', r: 'primary' }, { m: 'Triceps', r: 'secondary' }] },
+  legs: { targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'primary' }, { m: 'Glutes', r: 'secondary' }, { m: 'Calves', r: 'secondary' }] },
+  arms: { targets: [{ m: 'Biceps', r: 'primary' }, { m: 'Triceps', r: 'primary' }] }
+};
+
+// Weekly split blueprints, one array per style. The program generator picks
+// a day by cycling through these based on sessions logged so far — the
+// array doesn't need to match training-day count, since AUTO_STYLE_BY_DAYS
+// below only uses day count to choose a sensible *default* style.
+export const STYLE_TEMPLATES = {
+  full_body: [
+    { title: 'Full body A', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Back', r: 'primary' }, { m: 'Quads', r: 'primary' }, { m: 'Shoulders', r: 'secondary' }, { m: 'Hamstrings', r: 'secondary' }] },
+    { title: 'Full body B', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'primary' }, { m: 'Back', r: 'primary' }, { m: 'Chest', r: 'secondary' }, { m: 'Glutes', r: 'secondary' } ] }
   ],
-  2: [
-    { title: 'Full body A', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Back', r: 'primary' }, { m: 'Quads', r: 'secondary' }, { m: 'Shoulders', r: 'secondary' }] },
-    { title: 'Full body B', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'primary' }, { m: 'Back', r: 'secondary' }, { m: 'Chest', r: 'secondary' }, { m: 'Glutes', r: 'secondary' }] }
-  ],
-  3: [
-    { title: 'Push', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Shoulders', r: 'primary' }, { m: 'Triceps', r: 'secondary' }] },
-    { title: 'Pull', targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' }, { m: 'Shoulders', r: 'secondary' }] },
-    { title: 'Legs', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'primary' }, { m: 'Glutes', r: 'secondary' }, { m: 'Calves', r: 'secondary' }] }
-  ],
-  4: [
+  upper_lower: [
     { title: 'Upper A', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Back', r: 'primary' }, { m: 'Shoulders', r: 'secondary' }, { m: 'Triceps', r: 'secondary' }, { m: 'Biceps', r: 'secondary' }] },
     { title: 'Lower A', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'secondary' }, { m: 'Glutes', r: 'secondary' }, { m: 'Calves', r: 'secondary' }] },
     { title: 'Upper B', targets: [{ m: 'Back', r: 'primary' }, { m: 'Chest', r: 'primary' }, { m: 'Shoulders', r: 'primary' }, { m: 'Triceps', r: 'secondary' }] },
     { title: 'Lower B', targets: [{ m: 'Hamstrings', r: 'primary' }, { m: 'Quads', r: 'secondary' }, { m: 'Glutes', r: 'primary' }, { m: 'Calves', r: 'secondary' }] }
   ],
-  5: [
-    { title: 'Push', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Shoulders', r: 'primary' }, { m: 'Triceps', r: 'secondary' }] },
-    { title: 'Pull', targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' }] },
-    { title: 'Legs', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'primary' }, { m: 'Calves', r: 'secondary' }] },
-    { title: 'Upper', targets: [{ m: 'Chest', r: 'secondary' }, { m: 'Back', r: 'secondary' }, { m: 'Shoulders', r: 'primary' }] },
-    { title: 'Lower', targets: [{ m: 'Hamstrings', r: 'secondary' }, { m: 'Glutes', r: 'primary' }, { m: 'Quads', r: 'secondary' }] }
+  push_pull_legs: [
+    { title: 'Push', targets: MUSCLE_FOCUS.chest.targets },
+    { title: 'Pull', targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' }, { m: 'Shoulders', r: 'secondary' }] },
+    { title: 'Legs', targets: MUSCLE_FOCUS.legs.targets }
   ],
-  6: [
-    { title: 'Push', targets: [{ m: 'Chest', r: 'primary' }, { m: 'Shoulders', r: 'secondary' }, { m: 'Triceps', r: 'secondary' }] },
-    { title: 'Pull', targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' }] },
-    { title: 'Legs', targets: [{ m: 'Quads', r: 'primary' }, { m: 'Hamstrings', r: 'secondary' }, { m: 'Calves', r: 'secondary' }] },
-    { title: 'Push', targets: [{ m: 'Shoulders', r: 'primary' }, { m: 'Chest', r: 'secondary' }, { m: 'Triceps', r: 'secondary' }] },
-    { title: 'Pull', targets: [{ m: 'Back', r: 'primary' }, { m: 'Biceps', r: 'secondary' } ] },
-    { title: 'Legs', targets: [{ m: 'Hamstrings', r: 'primary' }, { m: 'Quads', r: 'secondary' }, { m: 'Glutes', r: 'secondary' }] }
+  bro_split: [
+    { title: 'Chest', targets: MUSCLE_FOCUS.chest.targets },
+    { title: 'Back', targets: MUSCLE_FOCUS.back.targets },
+    { title: 'Shoulders', targets: MUSCLE_FOCUS.shoulders.targets },
+    { title: 'Legs', targets: MUSCLE_FOCUS.legs.targets },
+    { title: 'Arms', targets: MUSCLE_FOCUS.arms.targets }
   ]
 };
 
+// Sensible default style by training-day count, used when the person leaves
+// their split style on "Auto" — matches common frequency guidance (more
+// days per muscle per week helps hypertrophy up to a point, so lower
+// frequencies default to full-body/PPL rather than fragmenting volume
+// across a bro split).
+export const AUTO_STYLE_BY_DAYS = { 1: 'full_body', 2: 'full_body', 3: 'push_pull_legs', 4: 'upper_lower', 5: 'push_pull_legs', 6: 'bro_split' };
+
+export const SPLIT_STYLES = [
+  { k: 'auto', label: 'Auto', blurb: 'Picked from your training days' },
+  { k: 'full_body', label: 'Full body', blurb: 'Everything, every session' },
+  { k: 'upper_lower', label: 'Upper / Lower', blurb: 'Alternating upper and lower days' },
+  { k: 'push_pull_legs', label: 'Push / Pull / Legs', blurb: 'Classic 3-day rotation' },
+  { k: 'bro_split', label: 'One muscle a day', blurb: 'Chest, back, shoulders, legs, arms' }
+];
+
+export const EQUIPMENT_LEVELS = [
+  { k: 'full', label: 'Full gym', blurb: 'Barbells, machines, cables, dumbbells' },
+  { k: 'dumbbell', label: 'Dumbbells only', blurb: 'Home gym, no barbell or machines' },
+  { k: 'bodyweight', label: 'Bodyweight only', blurb: 'No equipment' }
+];
+
 export const PIVOTS = [
-  { k: 'short', label: '30 minutes' },
   { k: 'nobar', label: 'No barbells' },
   { k: 'chest', label: 'Chest focus' },
   { k: 'back', label: 'Back focus' },

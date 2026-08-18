@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useStore } from '../store/StoreContext.jsx';
 import { WEEKDAYS } from '../store/seed.js';
+import { SPLIT_STYLES, EQUIPMENT_LEVELS } from '../store/exercises.js';
 import { ACC, ACC_SOFT, ACC_TEXT } from '../store/theme.js';
 import { haptic } from '../lib/haptics.js';
+import { notificationsSupported, requestNotificationPermission } from '../lib/notify.js';
 
 const sectionLabel = { fontSize: 12.5, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase', color: 'rgba(238,241,244,.34)' };
 const textInput = {
@@ -17,6 +19,13 @@ export default function SettingsSheet() {
   const [name, setName] = useState(state.profile.name);
   const [days, setDays] = useState(state.profile.trainingDays);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [notifStatus, setNotifStatus] = useState(notificationsSupported() ? Notification.permission : 'unsupported');
+
+  const enableNotifs = async () => {
+    haptic.tap();
+    const result = await requestNotificationPermission();
+    setNotifStatus(result);
+  };
 
   const saveKey = () => {
     haptic.tap();
@@ -66,6 +75,35 @@ export default function SettingsSheet() {
           })}
         </div>
 
+        <div style={{ marginTop: 22, ...sectionLabel }}>Split style</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', paddingBottom: 2 }}>
+          {SPLIT_STYLES.map(s => {
+            const on = (state.profile.splitStyle || 'auto') === s.k;
+            return (
+              <button key={s.k} className="pressable-subtle" onClick={() => { haptic.select(); dispatch({ type: 'UPDATE_PROFILE', splitStyle: s.k }); }} style={{
+                flex: 'none', height: 40, padding: '0 14px', borderRadius: 12,
+                border: `1.5px solid ${on ? ACC : 'rgba(255,255,255,.12)'}`, background: on ? ACC_SOFT : 'transparent',
+                color: on ? ACC_TEXT : 'rgba(238,241,244,.7)', fontFamily: 'Chivo,sans-serif', fontSize: 13.5,
+                fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
+              }}>{s.label}</button>
+            );
+          })}
+        </div>
+
+        <div style={{ marginTop: 22, ...sectionLabel }}>Equipment</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          {EQUIPMENT_LEVELS.map(e => {
+            const on = (state.profile.equipment || 'full') === e.k;
+            return (
+              <button key={e.k} className="pressable-subtle" onClick={() => { haptic.select(); dispatch({ type: 'UPDATE_PROFILE', equipment: e.k }); }} style={{
+                flex: 1, height: 40, borderRadius: 12, border: 'none',
+                background: on ? ACC : 'rgba(255,255,255,.07)', color: on ? '#fff' : 'rgba(238,241,244,.7)',
+                fontFamily: 'Chivo,sans-serif', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: '0 4px'
+              }}>{e.label}</button>
+            );
+          })}
+        </div>
+
         <div style={{ marginTop: 24, ...sectionLabel }}>Coach API key</div>
         <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(238,241,244,.4)', marginTop: 6 }}>Stored only on this device, sent only to Anthropic's API.</div>
         <input
@@ -103,6 +141,22 @@ export default function SettingsSheet() {
             }}>{sec}s</button>
           ))}
         </div>
+
+        <div style={{ marginTop: 26, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <div style={sectionLabel}>Rest timer alerts</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'rgba(238,241,244,.4)' }}>
+            {notifStatus === 'granted' ? 'On' : notifStatus === 'unsupported' ? 'Not available' : 'Off'}
+          </div>
+        </div>
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: 'rgba(238,241,244,.4)', marginTop: 6 }}>
+          A notification when rest finishes, even if your screen's locked or you've switched apps. The screen also stays awake during an active session automatically.
+        </div>
+        {notifStatus !== 'granted' && notifStatus !== 'unsupported' && (
+          <button className="pressable-subtle" onClick={enableNotifs} style={{
+            width: '100%', height: 46, marginTop: 10, borderRadius: 14, border: '1.5px solid rgba(255,255,255,.13)', background: 'transparent',
+            color: '#EEF1F4', fontFamily: 'Chivo,sans-serif', fontSize: 14, fontWeight: 700, cursor: 'pointer'
+          }}>{notifStatus === 'denied' ? 'Blocked — enable in iOS Settings' : 'Turn on'}</button>
+        )}
 
         <button className="pressable-subtle" onClick={resetApp} style={{
           width: '100%', height: 50, marginTop: 30, borderRadius: 16, border: '1.5px solid rgba(255,80,80,.3)', background: 'transparent',
